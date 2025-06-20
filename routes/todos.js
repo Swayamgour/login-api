@@ -10,7 +10,7 @@ router.post('/', auth, async (req, res) => {
   try {
     const todo = new Todo({
       text: req.body.text,
-      userId: req.user, // Uncomment this if using authentication
+      userId: req.user // Uncomment this if using authentication
     })
 
     await todo.save()
@@ -24,9 +24,8 @@ router.post('/', auth, async (req, res) => {
   }
 })
 
-// Get Todos of logged-in user
 router.get('/', auth, async (req, res) => {
-  const todos = await Todo.find()
+  const todos = await Todo.find({ userId: req.user })
   res.json(todos)
 })
 
@@ -36,7 +35,6 @@ router.put('/:id', async (req, res) => {
       { _id: req.params.id /*, userId: req.user */ }, // add userId check if using auth
       { text: req.body.text }, // ✅ Update the text now
       { new: true }
-      
     )
 
     if (!todo) {
