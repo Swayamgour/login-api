@@ -6,6 +6,12 @@ import todoRoutes from './routes/todos.js'
 import cors from 'cors'
 import http from 'http'
 import { Server } from 'socket.io'
+import menuRoutes from './routes/menu.js'
+import menuDetail from './routes/menuDetail.js'
+import auth from './middleware/auth.js'
+import cartRoutes from './routes/cart.js'
+import orderRoutes from './routes/order.js'
+import addressRoutes from './routes/address.js'
 
 dotenv.config()
 
@@ -35,6 +41,12 @@ mongoose
 // API routes
 app.use('/api/auth', authRoutes)
 // app.use('/api/todos', todoRoutes);
+app.use('/api/menu', auth , menuRoutes)
+app.use('/api/menuDetail', auth , menuDetail)
+
+app.use('/api/cart', cartRoutes)
+app.use('/api/orders', orderRoutes)
+app.use('/api/address', addressRoutes)
 
 app.use(
   '/api/todos',
