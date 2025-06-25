@@ -1,22 +1,66 @@
 import Order from '../models/Order.js'
+import Cart from '../models/Cart.js'
 
 export const placeOrder = async (req, res) => {
-  const { items, address, paymentMode, totalAmount } = req.body
-  const userId = req.user
+  try {
+    const userId = req.user
 
-  const newOrder = new Order({
-    userId,
-    items,
-    address,
-    paymentMode,
-    totalAmount
-  })
+    const cart = await Cart.findOneAndUpdate(
+      { userId },
+      {
+        $set: {
+          items: [],
+          subTotal: 0,
+          finalTotal: 0,
+          updatedAt: new Date()
+        }
+      }
+    )
 
-  await newOrder.save()
-  res.json({ msg: 'Order placed successfully', order: newOrder })
+    if (!cart || cart.items.length === 0) {
+      return res.status(400).json({ msg: 'Cart is empty' })
+    }
+
+    const order = new Order({
+      userId,
+      items: cart.items.map(item => ({
+        itemId: item.itemId,
+        name: item.name,
+        size: item.size,
+        crust: item.crust,
+        toppings: item.toppings,
+        quantity: item.quantity,
+        instructions: item.instructions,
+        pricePerUnit: item.pricePerUnit,
+        totalPrice: item.totalPrice
+      })),
+      subTotal: cart.subTotal,
+      finalTotal: cart.finalTotal,
+      deliveryCharge: cart.deliveryCharge,
+      discount: cart.discount,
+      status: 'Placed'
+    })
+
+    await order.save()
+
+    // Clear cart
+    cart.items = []
+    cart.subTotal = 0
+    cart.finalTotal = 0
+    await cart.save()
+
+    res.status(201).json({ msg: 'Order placed successfully', order })
+  } catch (err) {
+    console.error('Place order error:', err.message)
+    res.status(500).json({ error: 'Failed to place order' })
+  }
 }
-
-export const getMyOrders = async (req, res) => {
-  const orders = await Order.find({ userId: req.user }).sort({ createdAt: -1 })
-  res.json(orders)
+export const getOrderHistory = async (req, res) => {
+  try {
+    const userId = req.user
+    const orders = await Order.find({ userId }).sort({ createdAt: -1 })
+    res.json(orders)
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch order history' })
+  }
 }

@@ -10,18 +10,28 @@ const cartSchema = new mongoose.Schema({
     {
       itemId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'MenuItem'
+        ref: 'MenuItem',
+        required: true
       },
-      quantity: {
-        type: Number,
-        default: 1
-      }
+      name: String,
+      size: String, // e.g., Small, Medium, Large
+      crust: String, // e.g., Cheese Burst, Thin Crust
+      toppings: [String], // e.g., Extra Cheese, Olives
+      quantity: Number,
+      pricePerUnit: Number,
+      totalPrice: Number,
+      instructions: String // Optional user input
     }
   ],
+  subTotal: Number,
+  deliveryCharge: Number,
+  discount: Number,
+  finalTotal: Number,
   updatedAt: {
     type: Date,
     default: Date.now
   }
 })
 
-export default mongoose.model('Cart', cartSchema)
+const Cart = mongoose.model('Cart', cartSchema)
+export default Cart

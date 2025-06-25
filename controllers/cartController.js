@@ -1,44 +1,82 @@
 import mongoose from 'mongoose'
+import MenuItem from '../models/MenuItem.js' // for base price
 import Cart from '../models/Cart.js'
-
-// ✅ Add Item to Cart
 
 export const addToCart = async (req, res) => {
   try {
-    const { itemId, quantity } = req.body
     const userId = req.user
+    const {
+      itemId,
+      size,
+      crust,
+      toppings = [],
+      quantity = 1,
+      instructions = ''
+    } = req.body
 
-    const itemObjectId = new mongoose.Types.ObjectId(itemId)
+    // 1. Validate item
+    const menuItem = await MenuItem.findById(itemId)
+    if (!menuItem) return res.status(404).json({ error: 'Item not found' })
 
-    // Check if cart already exists
+    // 2. Calculate dynamic price
+    let pricePerUnit = menuItem.price
+    if (size === 'Medium') pricePerUnit += 50
+    if (size === 'Large') pricePerUnit += 100
+    if (crust === 'Cheese Burst') pricePerUnit += 30
+    pricePerUnit += toppings.length * 20
+
+    const totalPrice = pricePerUnit * quantity
+
+    // 3. Find cart
     let cart = await Cart.findOne({ userId })
-
     if (!cart) {
-      // First time cart creation
       cart = new Cart({
         userId,
-        items: [{ itemId: itemObjectId, quantity }]
+        items: [],
+        subTotal: 0,
+        deliveryCharge: 40,
+        discount: 0
       })
-    } else {
-      // Check if item already exists
-      const existingItemIndex = cart.items.findIndex(
-        item => item.itemId.toString() === itemObjectId.toString()
-      )
-
-      if (existingItemIndex !== -1) {
-        // ✅ Item exists → update quantity
-        cart.items[existingItemIndex].quantity += quantity
-      } else {
-        // ✅ New item → push into array
-        cart.items.push({ itemId: itemObjectId, quantity })
-      }
     }
 
+    // 4. Check if same item with same customization exists
+    const existingItem = cart.items.find(
+      item =>
+        item.itemId.toString() === itemId &&
+        item.size === size &&
+        item.crust === crust &&
+        JSON.stringify(item.toppings.sort()) === JSON.stringify(toppings.sort())
+    )
+
+    if (existingItem) {
+      existingItem.quantity += quantity
+      existingItem.totalPrice += totalPrice
+    } else {
+      cart.items.push({
+        itemId,
+        name: menuItem.name,
+        size,
+        crust,
+        toppings,
+        quantity,
+        pricePerUnit,
+        totalPrice,
+        instructions
+      })
+    }
+
+    // 5. Update cart totals
+    cart.subTotal = cart.items.reduce((sum, item) => sum + item.totalPrice, 0)
+    cart.finalTotal =
+      cart.subTotal + (cart.deliveryCharge || 0) - (cart.discount || 0)
+    cart.updatedAt = new Date()
+
     await cart.save()
+
     res.status(200).json({ msg: 'Item added to cart', cart })
   } catch (err) {
     console.error('Add to cart error:', err.message)
-    res.status(500).json({ error: 'Failed to add to cart' })
+    res.status(500).json({ error: 'Failed to add item to cart' })
   }
 }
 

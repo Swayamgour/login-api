@@ -1,42 +1,27 @@
+// models/Order.js
 import mongoose from 'mongoose'
 
 const orderSchema = new mongoose.Schema({
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   items: [
     {
-      itemId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'MenuItem'
-      },
+      itemId: mongoose.Schema.Types.ObjectId,
+      name: String,
+      size: String,
+      crust: String,
+      toppings: [String],
       quantity: Number,
-      price: Number
+      pricePerUnit: Number,
+      totalPrice: Number,
+      instructions: String
     }
   ],
-  address: {
-    type: String,
-    required: true
-  },
-  paymentMode: {
-    type: String,
-    enum: ['COD', 'Online'],
-    default: 'COD'
-  },
-  totalAmount: {
-    type: Number,
-    required: true
-  },
-  status: {
-    type: String,
-    enum: ['Placed', 'Preparing', 'On the way', 'Delivered', 'Cancelled'],
-    default: 'Placed'
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
+  subTotal: Number,
+  finalTotal: Number,
+  deliveryCharge: Number,
+  discount: Number,
+  status: { type: String, default: 'Placed' },
+  createdAt: { type: Date, default: Date.now }
 })
 
 export default mongoose.model('Order', orderSchema)
