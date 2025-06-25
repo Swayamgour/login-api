@@ -55,12 +55,24 @@ export const placeOrder = async (req, res) => {
     res.status(500).json({ error: 'Failed to place order' })
   }
 }
+// export const getOrderHistory = async (req, res) => {
+//   try {
+//     const userId = req.user
+//     const orders = await Order.find({ userId }).sort({ createdAt: -1 })
+//     res.json(orders)
+//   } catch (err) {
+//     res.status(500).json({ error: 'Failed to fetch order history' })
+//   }
+// }
+
+// controllers/orderController.js
+
 export const getOrderHistory = async (req, res) => {
   try {
     const userId = req.user
-    const orders = await Order.find({ userId }).sort({ createdAt: -1 })
-    res.json(orders)
+    const orders = await Order.find({ userId }).populate('items.itemId')
+    res.status(200).json(orders)
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch order history' })
+    res.status(500).json({ error: 'Failed to fetch orders' })
   }
 }
